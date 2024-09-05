@@ -1066,6 +1066,23 @@ $(DIST_AV1_PATENTS): $(AV1_PATENTS)
 
 all-dist: $(DIST_LICENSE) $(DIST_OFL_LICENSE) $(DIST_AV1_PATENTS)
 
+##
+## protonfixes
+##
+
+PROTONFIXES_TARGET := $(addprefix $(DST_BASE)/,protonfixes)
+$(PROTONFIXES_TARGET): $(addprefix $(SRCDIR)/,protonfixes)
+
+$(OBJ)/.build-protonfixes:
+	cd $(SRCDIR)/protonfixes && make
+	touch $(@)
+
+$(PROTONFIXES_TARGET): $(OBJ)/.build-protonfixes
+	cd $(SRCDIR)/protonfixes && make install
+	cp -a $(SRCDIR)/protonfixes/dist/protonfixes $(PROTONFIXES_TARGET)
+	rm -r $(SRCDIR)/protonfixes/dist
+
+all-dist: $(PROTONFIXES_TARGET)
 
 ##
 ## proton(.py), filelock.py, etc.
@@ -1083,12 +1100,8 @@ $(PROTON37_TRACKED_FILES_TARGET): $(addprefix $(SRCDIR)/,proton_3.7_tracked_file
 USER_SETTINGS_PY_TARGET := $(addprefix $(DST_BASE)/,user_settings.sample.py)
 $(USER_SETTINGS_PY_TARGET): $(addprefix $(SRCDIR)/,user_settings.sample.py)
 
-PROTONFIXES_TARGET := $(addprefix $(DST_BASE)/,protonfixes)
-$(PROTONFIXES_TARGET): $(addprefix $(SRCDIR)/,protonfixes)
-
 DIST_COPY_TARGETS := $(FILELOCK_TARGET) $(PROTON_PY_TARGET) \
-                     $(PROTON37_TRACKED_FILES_TARGET) $(USER_SETTINGS_PY_TARGET) \
-                     $(PROTONFIXES_TARGET)
+                     $(PROTON37_TRACKED_FILES_TARGET) $(USER_SETTINGS_PY_TARGET)
 
 $(DIST_COPY_TARGETS): | $(DST_DIR)
 	cp -a $(SRCDIR)/$(notdir $@) $@
@@ -1122,7 +1135,8 @@ redist: all
 	mkdir -p $(REDIST_DIR)
 	rsync --delete -arx $(DST_BASE)/ $(REDIST_DIR)
 	cp $(PROTONFIXES_TARGET)/cabextract $(REDIST_DIR)/files/bin/
-	cp $(PROTONFIXES_TARGET)/libmspack.so.0 $(REDIST_DIR)/files/lib64/
+	cp -a $(PROTONFIXES_TARGET)/libmspack.so $(REDIST_DIR)/files/lib64/
+	cp -a $(PROTONFIXES_TARGET)/libmspack.so.0 $(REDIST_DIR)/files/lib64/
 	cp $(PROTONFIXES_TARGET)/libmspack.so.0.1.0 $(REDIST_DIR)/files/lib64/
 	mv $(REDIST_DIR) $(BUILD_NAME)
 	tar -cvzf $(BUILD_NAME).tar.gz $(BUILD_NAME)
